@@ -29,8 +29,6 @@
 - (void)dealloc
 {
 	self.color = nil;
-	
-	[super dealloc];
 }
 
 
@@ -117,8 +115,7 @@
 - (void)setColor:(UIColor *)newColor
 {
 	if (newColor && newColor != color) {
-		[color release];
-		color = [newColor retain];
+		color = newColor;
 		
 		[self setNeedsDisplay];
 	}

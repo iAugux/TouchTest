@@ -42,6 +42,7 @@
 
 - (void)awakeFromNib
 {
+    [super awakeFromNib];
 	[self setup];
 }
 
@@ -53,10 +54,10 @@
 	self.exclusiveTouch = YES; // This helps avoid any orphan touches being left behind during rapid input.
 	
 	// Array of views to display the touches.
-	touchViews = [[NSMutableArray arrayWithCapacity:0] retain];
+	touchViews = [NSMutableArray arrayWithCapacity:0];
 	
 	// Create the colors we'll cycle through for new touch-views.
-	colors = [[NSArray arrayWithObjects:
+	colors = [NSArray arrayWithObjects:
 			  [UIColor colorWithRed:0.0 green:0.5 blue:1.0 alpha:1.0],
 			  [UIColor orangeColor],
 			  [UIColor redColor],
@@ -67,7 +68,7 @@
 			  [UIColor yellowColor],
 			  [UIColor purpleColor],
 			  [UIColor cyanColor],
-			  nil] retain];
+			  nil];
 	lastColor = [colors count];
 	
 	// Create map to associate touch-events with views.
@@ -80,14 +81,10 @@
 
 - (void)dealloc
 {
-	[touchViews release];
 	touchViews = nil;
-	[colors release];
 	colors = nil;
 	
 	CFRelease(touchMap);
-	
-	[super dealloc];
 }
 
 
@@ -121,7 +118,10 @@
 	pt = CGPointMake(5, 5); // inset from top-left corner.
 	int numViews = [touchViews count];
 	NSString *label = [NSString stringWithFormat:@"%d %@", numViews, ((numViews == 1) ? @"touch" : @"touches")]; // grammar is important, kids.
-	[label drawAtPoint:pt withFont:[UIFont boldSystemFontOfSize:20.0]];
+
+    UIFont *font = [UIFont boldSystemFontOfSize:20.0];
+    NSDictionary *attrsDictionary = [NSDictionary dictionaryWithObjectsAndKeys: font, NSFontAttributeName, nil];
+    [label drawAtPoint:pt withAttributes:attrsDictionary];
 }
 
 
@@ -138,14 +138,13 @@
 		view.center = [touch locationInView:self];
 		view.color = [self nextColor];
 		[touchViews addObject:view];
-		[view release];
 		
 		// Apply an animation to fade and scale the view onto the screen.
 		CALayer *layer = view.layer;
 		layer.opacity = 0.0;
 		[self addSubview:view];
 		layer.transform = CATransform3DMakeScale(0.5, 0.5, 0.5); // "zoom up" by scaling from 50% to 100%.
-		[UIView beginAnimations:MG_ANIMATION_APPEAR context:view];
+		[UIView beginAnimations:MG_ANIMATION_APPEAR context:(__bridge void * _Nullable)(view)];
 		[UIView setAnimationDidStopSelector:@selector(animationDidStop:finished:context:)];
 		[UIView setAnimationDelegate:self];
 		layer.opacity = 1.0;
@@ -153,7 +152,7 @@
 		[UIView commitAnimations];
 		
 		// Add view to the map for this touch. Yes, we use the touch event as the key in our dictionary.
-		CFDictionarySetValue(touchMap, touch , view);
+		CFDictionarySetValue(touchMap, (__bridge const void *)(touch) , (__bridge const void *)(view));
 	}
 	
 	[self setNeedsDisplay];
@@ -166,7 +165,7 @@
 	for (UITouch *touch in touches) {
 		// Obtain view corresponding to this touch event.
 		// This works because each event in a chain of corresponding touches is at the same address in memory. Very useful.
-		UIView *view = (UIView*)CFDictionaryGetValue(touchMap, touch);
+		UIView *view = (UIView*)CFDictionaryGetValue(touchMap, (__bridge const void *)(touch));
 		if (view) {
 			// Update center to track the change to the touch.
 			view.center = [touch locationInView:self];
@@ -182,14 +181,14 @@
 	// Destroy relevant MGTouchViews.
 
 	for (UITouch *touch in touches) {
-		MGTouchView *view = (MGTouchView*)CFDictionaryGetValue(touchMap, touch);
+		MGTouchView *view = (MGTouchView*)CFDictionaryGetValue(touchMap, (__bridge const void *)(touch));
 		if (view) {
 			// Update center in case it's moved since the last change.
 			view.center = [touch locationInView:self];
 			
 			// Fade out.
 			view.showArrows = NO;
-			[UIView beginAnimations:MG_ANIMATION_DISAPPEAR context:view];
+			[UIView beginAnimations:MG_ANIMATION_DISAPPEAR context:(__bridge void * _Nullable)(view)];
 			[UIView setAnimationDidStopSelector:@selector(animationDidStop:finished:context:)];
 			[UIView setAnimationDelegate:self];
 			CALayer *layer = view.layer;
@@ -198,7 +197,7 @@
 			[UIView commitAnimations];
 		
 			// Remove view from the map immediately. The animationDidStop:... method will remove the view itself.
-			CFDictionaryRemoveValue(touchMap, touch);
+			CFDictionaryRemoveValue(touchMap, (__bridge const void *)(touch));
 		}
 
 	}
@@ -213,7 +212,7 @@
 
 - (IBAction)clearAllTouches:(id)sender
 {
-	NSArray *touchesArray = [(NSMutableDictionary *)touchMap allKeys];
+	NSArray *touchesArray = [(__bridge NSMutableDictionary *)touchMap allKeys];
 	NSSet *touches = [NSSet setWithArray:touchesArray];
 	[self touchesEnded:touches withEvent:nil];
 }
@@ -224,7 +223,7 @@
 
 - (void)animationDidStop:(NSString *)animationID finished:(NSNumber *)finished context:(void *)context
 {
-	MGTouchView *view = context;
+	MGTouchView *view = (__bridge MGTouchView *)(context);
 	if (view && [touchViews containsObject:view]) {
 		if ([finished boolValue] && [animationID isEqualToString:MG_ANIMATION_DISAPPEAR]) {
 			// This is a fade-out animation, and it just finished. Remove the view.

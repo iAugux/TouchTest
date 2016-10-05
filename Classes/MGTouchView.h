@@ -13,7 +13,7 @@
 	BOOL showArrows;
 }
 
-@property (nonatomic, retain) UIColor *color;
+@property (nonatomic, strong) UIColor *color;
 @property (nonatomic, assign) BOOL showArrows;
 
 @end
