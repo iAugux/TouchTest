@@ -188,7 +188,7 @@
 			
 			// Fade out.
 			view.showArrows = NO;
-			[UIView beginAnimations:MG_ANIMATION_DISAPPEAR context:(__bridge void * _Nullable)(view)];
+			[UIView beginAnimations:MG_ANIMATION_DISAPPEAR context:(__bridge_retained void * _Nullable)(view)];
 			[UIView setAnimationDidStopSelector:@selector(animationDidStop:finished:context:)];
 			[UIView setAnimationDelegate:self];
 			CALayer *layer = view.layer;
